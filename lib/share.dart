@@ -137,25 +137,6 @@ class Share {
     assert(text != null && text.isNotEmpty);
     return share(text: text, sharePositionOrigin: sharePositionOrigin);
   }
-
-  /// send email, eq: share(text: text,...); see [share]
-  /// The optional [text] parameter is email title
-  /// The optional [subject] parameter is email subject.
-  /// The optional [sharePositionOrigin] parameter can be used to specify a global
-  /// origin rect for the share sheet to popover from on iPads. It has no effect
-  /// on non-iPads.
-  static Future<void> sendEmail(
-    String text,
-    String subject, {
-    ui.Rect sharePositionOrigin,
-  }) {
-    assert(text != null && text.isNotEmpty);
-    return share(
-      text: text,
-      extra: SharedEmail(subject),
-      sharePositionOrigin: sharePositionOrigin,
-    );
-  }
 }
 
 /// share data.
