@@ -1,0 +1,24 @@
+name: flutter_share
+description: Plugin for summoning a platform share sheet.
+version: 0.1.0
+author: LimeVista
+homepage: https://github.com/LimeVista/flutter_share
+
+environment:
+  sdk: ">=2.1.0 <3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  plugin:
+    androidPackage: com.github.limevista.share
+    pluginClass: FlutterSharePlugin
+    androidX: true
+
+
