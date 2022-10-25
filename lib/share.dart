@@ -69,11 +69,10 @@ class Share {
   /// origin rect for the share sheet to popover from on iPads. It has no effect
   /// on non-iPads.
   static Future<void> share({
-    String text,
-    SharedData extra,
-    ui.Rect sharePositionOrigin,
+    String? text,
+    SharedData? extra,
+    ui.Rect? sharePositionOrigin,
   }) {
-    assert(text != null && text.isNotEmpty);
     assert(extra != null || text != null);
 
     final params = <String, dynamic>{
@@ -97,7 +96,7 @@ class Share {
   /// The optional [sharePositionOrigin] parameter can be used to specify a global
   /// origin rect for the share sheet to popover from on iPads. It has no effect
   /// on non-iPads.
-  static Future<void> shareImage(String path, {ui.Rect sharePositionOrigin}) {
+  static Future<void> shareImage(String path, {ui.Rect? sharePositionOrigin}) {
     return share(
       extra: SharedImage(path),
       sharePositionOrigin: sharePositionOrigin,
@@ -109,7 +108,7 @@ class Share {
   /// The optional [sharePositionOrigin] parameter can be used to specify a global
   /// origin rect for the share sheet to popover from on iPads. It has no effect
   /// on non-iPads.
-  static Future<void> shareVideo(String path, {ui.Rect sharePositionOrigin}) {
+  static Future<void> shareVideo(String path, {ui.Rect? sharePositionOrigin}) {
     return share(
       extra: SharedVideo(path),
       sharePositionOrigin: sharePositionOrigin,
@@ -121,7 +120,7 @@ class Share {
   /// The optional [sharePositionOrigin] parameter can be used to specify a global
   /// origin rect for the share sheet to popover from on iPads. It has no effect
   /// on non-iPads.
-  static Future<void> shareAudio(String path, {ui.Rect sharePositionOrigin}) {
+  static Future<void> shareAudio(String path, {ui.Rect? sharePositionOrigin}) {
     return share(
       extra: SharedAudio(path),
       sharePositionOrigin: sharePositionOrigin,
@@ -133,8 +132,8 @@ class Share {
   /// The optional [sharePositionOrigin] parameter can be used to specify a global
   /// origin rect for the share sheet to popover from on iPads. It has no effect
   /// on non-iPads.
-  static Future<void> shareText(String text, {ui.Rect sharePositionOrigin}) {
-    assert(text != null && text.isNotEmpty);
+  static Future<void> shareText(String text, {ui.Rect? sharePositionOrigin}) {
+    assert(text.isNotEmpty);
     return share(text: text, sharePositionOrigin: sharePositionOrigin);
   }
 }
@@ -151,7 +150,7 @@ abstract class SharedData {
 }
 
 abstract class _SharedFile extends SharedData {
-  _SharedFile(this.path) : assert(path != null && path.isNotEmpty);
+  _SharedFile(this.path) : assert(path.isNotEmpty);
 
   final String path;
 

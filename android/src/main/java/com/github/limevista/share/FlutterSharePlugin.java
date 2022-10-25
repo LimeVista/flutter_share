@@ -7,38 +7,40 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import java.io.File;
 
+import io.flutter.embedding.engine.plugins.FlutterPlugin;
+import io.flutter.embedding.engine.plugins.activity.ActivityAware;
+import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
 import io.flutter.plugin.common.PluginRegistry;
-import io.flutter.plugin.common.PluginRegistry.Registrar;
 
 /**
  * FlutterSharePlugin
  */
-public class FlutterSharePlugin implements MethodCallHandler, PluginRegistry.RequestPermissionsResultListener {
+public class FlutterSharePlugin implements MethodCallHandler, FlutterPlugin,
+        PluginRegistry.RequestPermissionsResultListener, ActivityAware {
 
     private static final int CODE_ASK_OK = 100;
 
-    private final Registrar mRegistrar;
+    @Nullable
     private String mText;
+
+    @Nullable
     private String mType;
+
+    @Nullable
     private String mData;
 
-    private FlutterSharePlugin(Registrar registrar) {
-        mRegistrar = registrar;
-    }
-
-    public static void registerWith(Registrar registrar) {
-        final MethodChannel channel = new MethodChannel(registrar.messenger(), "LimeVista:Share");
-        channel.setMethodCallHandler(new FlutterSharePlugin(registrar));
-    }
+    @Nullable
+    private Activity mActivity;
 
     @Override
     public void onMethodCall(MethodCall call, @NonNull Result result) {
@@ -54,14 +56,17 @@ public class FlutterSharePlugin implements MethodCallHandler, PluginRegistry.Req
     }
 
     private void share() {
+        final Activity activity = mActivity;
+        if (activity == null) return;
         final String type = mType;
         if (type == null) throw new IllegalArgumentException("Type must be not mull.");
         if (ShareUtils.isFile(mType) && mData != null) {
-            if (shouldRequestPermission(new File(mData)) && !checkPermission()) {
-                requestPermission();
+            if (shouldRequestPermission(new File(mData)) && !checkPermission(activity)) {
+                requestPermission(activity);
                 return;
             }
         }
+
         Intent shareIntent = new Intent();
         shareIntent.setAction(Intent.ACTION_SEND);
         final String text = mText;
@@ -73,29 +78,37 @@ public class FlutterSharePlugin implements MethodCallHandler, PluginRegistry.Req
             case ShareUtils.TYPE_IMAGE:
                 File imageFile = new File(mData);
                 shareIntent.setType("image/*");
-                shareIntent.putExtra(Intent.EXTRA_STREAM,
-                        ShareUtils.getUriForFile(mRegistrar.context(), imageFile, mType));
+                shareIntent.putExtra(
+                        Intent.EXTRA_STREAM,
+                        ShareUtils.getUriForFile(activity, imageFile, mType)
+                );
                 break;
 
             case ShareUtils.TYPE_VIDEO:
                 File videoFile = new File(mData);
                 shareIntent.setType("video/*");
-                shareIntent.putExtra(Intent.EXTRA_STREAM,
-                        ShareUtils.getUriForFile(mRegistrar.context(), videoFile, mType));
+                shareIntent.putExtra(
+                        Intent.EXTRA_STREAM,
+                        ShareUtils.getUriForFile(activity, videoFile, mType)
+                );
                 break;
 
             case ShareUtils.TYPE_AUDIO:
                 File audioFile = new File(mData);
                 shareIntent.setType("audio/*");
-                shareIntent.putExtra(Intent.EXTRA_STREAM,
-                        ShareUtils.getUriForFile(mRegistrar.context(), audioFile, mType));
+                shareIntent.putExtra(
+                        Intent.EXTRA_STREAM,
+                        ShareUtils.getUriForFile(activity, audioFile, mType)
+                );
                 break;
 
             case ShareUtils.TYPE_FILE:
                 File file = new File(mData);
                 shareIntent.setType("application/*");
-                shareIntent.putExtra(Intent.EXTRA_STREAM,
-                        ShareUtils.getUriForFile(mRegistrar.context(), file, mType));
+                shareIntent.putExtra(
+                        Intent.EXTRA_STREAM,
+                        ShareUtils.getUriForFile(activity, file, mType)
+                );
                 break;
 
             case ShareUtils.TYPE_EMAIL:
@@ -110,17 +123,15 @@ public class FlutterSharePlugin implements MethodCallHandler, PluginRegistry.Req
         }
         shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         Intent chooser = Intent.createChooser(shareIntent, null);
-        final Activity activity = mRegistrar.activity();
-        if (activity != null) {
-            activity.startActivity(chooser);
-        } else {
-            chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            mRegistrar.context().startActivity(chooser);
-        }
+        activity.startActivity(chooser);
     }
 
     @Override
-    public boolean onRequestPermissionsResult(int requestCode, String[] perms, int[] results) {
+    public boolean onRequestPermissionsResult(
+            int requestCode,
+            @NonNull String[] perms,
+            @NonNull int[] results
+    ) {
         if (requestCode == CODE_ASK_OK &&
                 results.length > 0 &&
                 results[0] == PackageManager.PERMISSION_GRANTED) {
@@ -129,15 +140,15 @@ public class FlutterSharePlugin implements MethodCallHandler, PluginRegistry.Req
         return false;
     }
 
-    private boolean checkPermission() {
-        return ContextCompat.checkSelfPermission(mRegistrar.context(),
+    private boolean checkPermission(@NonNull Activity activity) {
+        return ContextCompat.checkSelfPermission(activity,
                 Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 == PackageManager.PERMISSION_GRANTED;
     }
 
-    private void requestPermission() {
+    private void requestPermission(@NonNull Activity activity) {
         ActivityCompat.requestPermissions(
-                mRegistrar.activity(),
+                activity,
                 new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
                 CODE_ASK_OK
         );
@@ -145,5 +156,36 @@ public class FlutterSharePlugin implements MethodCallHandler, PluginRegistry.Req
 
     private static boolean shouldRequestPermission(@NonNull File file) {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && ShareUtils.inExternalStorage(file);
+    }
+
+    @Override
+    public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
+        final MethodChannel channel = new MethodChannel(binding.getBinaryMessenger(), "LimeVista:Share");
+        channel.setMethodCallHandler(this);
+    }
+
+    @Override
+    public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
+
+    }
+
+    @Override
+    public void onAttachedToActivity(@NonNull ActivityPluginBinding binding) {
+        mActivity = binding.getActivity();
+    }
+
+    @Override
+    public void onDetachedFromActivityForConfigChanges() {
+
+    }
+
+    @Override
+    public void onReattachedToActivityForConfigChanges(@NonNull ActivityPluginBinding binding) {
+
+    }
+
+    @Override
+    public void onDetachedFromActivity() {
+        mActivity = null;
     }
 }

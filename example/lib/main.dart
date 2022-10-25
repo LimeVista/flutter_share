@@ -41,7 +41,7 @@ class _ExampleAppState extends State<ExampleApp> {
     );
   }
 
-  Widget buildButton(String key) => RaisedButton(
+  Widget buildButton(String key) => ElevatedButton(
         onPressed: () => _onPressed(key),
         child: Text(key),
       );
@@ -61,7 +61,7 @@ class _ExampleAppState extends State<ExampleApp> {
         final data = await (await p.toImage(512, 512))
             .toByteData(format: ui.ImageByteFormat.png);
         await file.create();
-        await file.writeAsBytes(data.buffer.asUint8List());
+        await file.writeAsBytes(data!.buffer.asUint8List());
         Share.share(
           text: "ShareFile",
           extra: SharedFile(file.path),
